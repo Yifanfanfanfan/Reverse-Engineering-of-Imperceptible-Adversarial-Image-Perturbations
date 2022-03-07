@@ -1,6 +1,6 @@
 export CUDA_VISIBLE_DEVICES=3
 python -u -W ignore test_denoiser_shift.py        --dataset imagenet\
-                                            --denoiser '/home/yifan/github/RED_Denoising/RED_Denoising/code/transform_study/pretrain_no_aug_1.0_portion_300_w_vali/AugMAENOl1mu0.0gamma0.0lambda0.0surrogatevgg19attack_methodPGD,FGSM,CWvictim_modelres18,res50,vgg16,vgg19,incptv3bestpoint.pth.tar'\
+                                            --denoiser ''\
                                             --gamma1 0\
                                             --lambda1 0\
                                             --mu1 0\
