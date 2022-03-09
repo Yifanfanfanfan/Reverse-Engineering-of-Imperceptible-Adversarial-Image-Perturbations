@@ -65,6 +65,10 @@ parser.add_argument('--objective', default='denoising', type=str,
 parser.add_argument('--surrogate_model', default='res18',type=str,help='the name of the surrogate model for regularization term calculation')
 parser.add_argument('--pretrained-denoiser', default='', type=str,
                     help='path to a pretrained denoiser')
+parser.add_argument('--advdata_dir', default='', type=str,
+                    help='path to the training dataset')
+parser.add_argument('--root', default='', type=str,
+                    help='path to the root of the training code')
 parser.add_argument('--optimizer', default='Adam', type=str,
                     help='SGD, Adam, or Adam then SGD', choices=['SGD', 'Adam', 'AdamThenSGD'])
 parser.add_argument('--start-sgd-epoch', default=50, type=int,
@@ -153,7 +157,7 @@ def main():
     # Copy code to output directory
     copy_code(args.outdir)
 
-    root = '/home/yifan/github/RED_Denoising/'
+    root = args.root
     best_loss = 10000.0
 
 
@@ -171,7 +175,7 @@ def main():
     train_data_list = list()
     for item in attack_method_victim_model_list:
         txt_train_list = os.path.join(root, 'train_list.txt')
-        advdata_dir = root + 'RED_Denoising/code/'
+        advdata_dir = args.advdata_dir
         img_train_clean =  advdata_dir +  item + '/trainclean'
         img_train_adv =  advdata_dir + item + '/train'
         tt.gen_txt(txt_train_list, img_train_clean, img_train_adv)

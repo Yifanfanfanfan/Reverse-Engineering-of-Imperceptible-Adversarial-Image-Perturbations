@@ -73,7 +73,7 @@ def main(args):
     if not os.path.exists(args.outdir):
         os.makedirs(args.outdir)
     
-    root = ''
+    root = args.root
     attack_method = list(map(lambda x: str(x), args.attack_method.split(",")))
     victim_model = list(map(lambda x: str(x), args.victim_model.split(",")))
     intensity = list(map(lambda x: str(x), args.intensity.split(",")))
@@ -110,7 +110,7 @@ def main(args):
     
     if intensity[0] == 'auto':
         text_test_list = os.path.join(root, 'test_list.txt')
-        img_folder = '/home/yifan/github/RED_Denoising/RED_Denoising/code/autoattacktestdata/' + victim_model[0]
+        img_folder = args.img_folder + victim_model[0]
         img_test_clean = img_folder + '/clean'
         img_test_adv = img_folder + '/adv'
         tt.gen_txt_auto(text_test_list, img_test_clean, img_test_adv)
@@ -144,7 +144,7 @@ def main(args):
 
     elif intensity[0] == 'robust_auto':
         text_test_list = os.path.join(root, 'test_list.txt')
-        img_folder = '/home/yifan/github/RED_Denoising/RED_Denoising/code/autoattacktestdata/robustres50'
+        img_folder = args.img_folder
         img_test_clean = img_folder + '/clean'
         img_test_adv = img_folder + '/adv'
         tt.gen_txt_robust_auto(text_test_list, img_test_clean, img_test_adv)
@@ -201,7 +201,7 @@ def main(args):
         for model_name in victim_model: #vgg19,alexnet
             
             text_test_list = os.path.join(root, 'text/test_list_{}_feature.txt'.format(model_name))
-            img_folder = '/home/yifan/github/RED_Denoising/RED_Denoising/code/Feature_Attack'
+            img_folder = args.img_folder
             img_test_clean = img_folder + '/saved_images_' + model_name + '/Clean(Source)'
             img_test_adv = img_folder + '/saved_images_' + model_name + '/Adv'
             tt.gen_txt_auto(text_test_list, img_test_clean, img_test_adv)
@@ -249,7 +249,7 @@ def main(args):
                 test_data_list = list()
                 for intensity_name in intensity:
                     text_test_list = os.path.join(root, 'test_list_portion_{}_{}_{}.txt'.format(model_name, attack_name, intensity_name))
-                    img_folder = '/home/yifan/github/RED_Denoising/RED_Denoising/code/4typesdenoisedtestdata/4typesdenoisedtestdata/'
+                    img_folder = args.img_folder
                     # img_test_clean = '/home/yifan/github/RED_Denoising/RED_Denoising/code/denoise/' + model_name + '/testclean/' + args.intensity
                     # img_test_adv = '/home/yifan/github/RED_Denoising/RED_Denoising/code/denoise/' + model_name + '/test/' + attack_name + '/' + args.intensity  
                     img_test_clean = img_folder + attack_name + model_name + '/test4types/clean'
@@ -624,401 +624,6 @@ def test_with_classifier(loader: DataLoader, denoiser: torch.nn.Module, criterio
         # return (losses_denoised_advs.avg, losses_cleans_advs.avg, losses_denoised_cleans.avg, losses_denoised_advs_L1.avg, losses_cleans_advs_L1.avg, losses_denoised_cleans_L1.avg, top1.avg, top1_perturb.avg, image_num, distance_losses_denoised_cleans.avg, distance_losses_cleans_advs.avg, distance_losses_denoised_advs.avg)
         return (top1.avg, top1_perturb.avg, image_num, distance_losses_denoised_cleans.avg, distance_losses_cleans_advs.avg, distance_losses_denoised_advs.avg, logit_distance_losses_denoised_cleans.avg, logit_distance_losses_cleans_advs.avg, logit_distance_losses_denoised_advs.avg, logit_distance_losses_recon_advs.avg, logit_distance_losses_recon_cleans.avg)
 
-
-
-def test_with_classifier_a(loader: DataLoader, denoiser: torch.nn.Module, criterion, noise_sd: float, print_freq: int, classifier: torch.nn.Module, classifier_gt: torch.nn.Module, a):
-    """
-    A function to test the classification performance of a denoiser when attached to a given classifier
-        :param loader:DataLoader: test dataloader
-        :param denoiser:torch.nn.Module: the denoiser 
-        :param criterion: the loss function (e.g. CE)
-        :param noise_sd:float: the std-dev of the Guassian noise perturbation of the input
-        :param print_freq:int: the frequency of logging
-        :param classifier:torch.nn.Module: the classifier to which the denoiser is attached
-    """
-    root = ''
-    MSE = MSELoss(size_average=None, reduce=None, reduction='mean').cuda()
-    L1 = L1Loss(size_average=None, reduce=None, reduction='mean').cuda()
-    # log
-    result_dir = os.path.join(root, "Result_test")
-
-    now_time = datetime.now()
-    time_str = datetime.strftime(now_time, '%m-%d_%H-%M-%S')
-
-    log_dir = os.path.join(result_dir, time_str)
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-
-    outputFile = os.path.join(log_dir, 'log.txt')
-
-    batch_time = AverageMeter()
-    data_time = AverageMeter()
-    # losses = AverageMeter()
-    losses_denoised_advs = AverageMeter()  #D(x') x' L2
-    losses_cleans_advs =  AverageMeter()  # x' x  L2
-    losses_denoised_cleans = AverageMeter() # D(x') x L2
-    losses_denoised_advs_L1 = AverageMeter()  #D(x') x' L1
-    losses_cleans_advs_L1 =  AverageMeter()  # x' x  L1
-    losses_denoised_cleans_L1 = AverageMeter() # D(x') x  L1
-    top1 = AverageMeter()
-    top1_perturb = AverageMeter()
-
-    losses_adv_a_advs = AverageMeter()
-    losses_adv_a_cleans = AverageMeter()
-    losses_adv_a_advs_L1 = AverageMeter()
-    losses_adv_a_cleans_L1 = AverageMeter()
-    accs_adv_a = AverageMeter()
-    suc_rates_adv_a = AverageMeter()
-
-    end = time.time()
-
-    # switch to eval mode
-    classifier.eval()
-    classifier_gt.eval()
-    if denoiser:
-        denoiser.eval()
-
-    with torch.no_grad():
-        for i, (cleans, advs) in enumerate(loader):
-        # measure data loading time
-            data_time.update(time.time() - end)
-            perturbation = advs - cleans
-            adv_a = cleans + a/20 * perturbation
-            cleans = cleans.cuda().to(dtype=torch.float)
-            advs = advs.cuda().to(dtype=torch.float) 
-            adv_a = adv_a.cuda().to(dtype=torch.float)
-            clean_label = classifier(cleans)
-            adv_label = classifier(advs)
-            adv_a_label = classifier(adv_a)
-            clean_label = clean_label.argmax(1).detach().clone()
-            adv_label = adv_label.argmax(1).detach().clone()
-            adv_a_label = adv_a_label.argmax(1).detach().clone()
-            acc_adv_a = sum(adv_a_label==clean_label)/cleans.size(0)
-            suc_rate_adv_a = sum(adv_a_label==adv_label)/cleans.size(0)
-            loss_adv_a_advs_L1 = L1(adv_a, advs)
-            loss_adv_a_cleans_L1 = L1(adv_a, cleans)
-            loss_adv_a_advs = MSE(adv_a, advs)
-            loss_adv_a_cleans = MSE(adv_a, cleans)
-
-            losses_adv_a_advs.update(loss_adv_a_advs.item(), cleans.size(0))
-            losses_adv_a_cleans.update(loss_adv_a_cleans.item(), cleans.size(0))
-            losses_adv_a_advs_L1.update(loss_adv_a_advs_L1.item(), cleans.size(0))
-            losses_adv_a_cleans_L1.update(loss_adv_a_cleans_L1.item(), cleans.size(0))
-            accs_adv_a.update(acc_adv_a.item(), cleans.size(0))
-            suc_rates_adv_a.update(suc_rate_adv_a.item(), cleans.size(0))
-
-    return (losses_adv_a_advs.avg, losses_adv_a_cleans.avg, losses_adv_a_advs_L1.avg, losses_adv_a_cleans_L1.avg, accs_adv_a.avg, suc_rates_adv_a.avg)
-
-
-def test_with_classifier_DTx(loader: DataLoader, denoiser: torch.nn.Module, criterion, noise_sd: float, print_freq: int, classifier: torch.nn.Module, classifier_gt: torch.nn.Module):
-    """
-    A function to test the classification performance of a denoiser when attached to a given classifier
-        :param loader:DataLoader: test dataloader
-        :param denoiser:torch.nn.Module: the denoiser 
-        :param criterion: the loss function (e.g. CE)
-        :param noise_sd:float: the std-dev of the Guassian noise perturbation of the input
-        :param print_freq:int: the frequency of logging
-        :param classifier:torch.nn.Module: the classifier to which the denoiser is attached
-    """
-    root = ''
-    MSE = MSELoss(size_average=None, reduce=None, reduction='mean').cuda()
-    L1 = L1Loss(size_average=None, reduce=None, reduction='mean').cuda()
-    # log
-    result_dir = os.path.join(root, "Result_test")
-
-    if args.transform != None:
-        transform_set = list(map(lambda x: str(x), args.transform.split(",")))
-
-    now_time = datetime.now()
-    time_str = datetime.strftime(now_time, '%m-%d_%H-%M-%S')
-
-    log_dir = os.path.join(result_dir, time_str)
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-
-    outputFile = os.path.join(log_dir, 'log.txt')
-
-    batch_time = AverageMeter()
-    data_time = AverageMeter()
-
-    top1 = AverageMeter()
-    top1_perturb = AverageMeter()
-    acc_flip = AverageMeter()
-    suc_rate_flip = AverageMeter()
-    acc_rotation = AverageMeter()
-    suc_rate_rotation = AverageMeter()
-    
-
-    end = time.time()
-
-    # switch to eval mode
-    classifier.eval()
-    classifier_gt.eval()
-    if denoiser:
-        denoiser.eval()
-
-    with torch.no_grad():
-        
-        for i, (cleans, advs) in enumerate(loader):
-        # measure data loading time
-            data_time.update(time.time() - end)
-            perturbation = cleans - advs
-            
-            cleans = cleans.cuda().to(dtype=torch.float)
-            advs = advs.cuda().to(dtype=torch.float) 
-            
-            
-            if denoiser is not None:
-                denoised = denoiser(advs)
-            
-            
-
-            T_flip_cleans = torch.zeros(cleans.shape[0], cleans.shape[1], cleans.shape[2], cleans.shape[3])
-            T_flip_advs = torch.zeros(cleans.shape[0], cleans.shape[1], cleans.shape[2], cleans.shape[3])
-        
-
-            T_rotation_cleans = torch.zeros(cleans.shape[0], cleans.shape[1], cleans.shape[2], cleans.shape[3])
-            T_rotation_advs = torch.zeros(cleans.shape[0], cleans.shape[1], cleans.shape[2], cleans.shape[3])
-            for trans in transform_set:
-                if trans == 'rotation':
-                    angle = transforms.RandomRotation.get_params([-180, 180])
-                    T_rotation_cleans = tf.rotate(cleans,angle)
-                    T_rotation_advs = tf.rotate(advs,angle)
-                elif trans == 'flip':
-                    if random.random() > 0.5:
-                        T_flip_cleans = tf.hflip(cleans)
-                        T_flip_advs = tf.hflip(advs)
-                    if random.random() > 0.5:
-                        T_flip_cleans = tf.vflip(cleans)
-                        T_flip_advs = tf.vflip(advs)
-            T_rotation_cleans = T_rotation_cleans.cuda().to(dtype=torch.float)
-            T_rotation_advs = T_rotation_advs.cuda().to(dtype=torch.float)
-            T_flip_cleans = T_flip_cleans.cuda().to(dtype=torch.float)
-            T_flip_advs = T_flip_advs.cuda().to(dtype=torch.float)
-            T_flip_denoised = denoiser(T_flip_advs)
-            T_rotation_denoised = denoiser(T_rotation_advs)
-
-            recon_rotation = T_rotation_advs - T_rotation_denoised + T_rotation_cleans
-            recon_flip = T_flip_advs - T_flip_denoised + T_flip_cleans
-
-            f_T_flip_denoised = classifier(T_flip_denoised)
-            f_T_rotation_denoised = classifier(T_rotation_denoised)
-            f_T_flip_cleans = classifier(T_flip_cleans)
-            f_T_rotation_cleans = classifier(T_rotation_cleans)
-            f_T_flip_advs = classifier(T_flip_advs)
-            f_T_rotation_advs = classifier(T_rotation_advs)
-            f_recon_flip = classifier(recon_flip)
-            f_recon_rotation = classifier(recon_rotation)
-
-            F_T_flip_denoised = f_T_flip_denoised.argmax(1).detach().clone()
-            F_T_rotation_denoised = f_T_rotation_denoised.argmax(1).detach().clone()
-            F_T_flip_cleans = f_T_flip_cleans.argmax(1).detach().clone()
-            F_T_rotation_cleans = f_T_rotation_cleans.argmax(1).detach().clone()
-            F_T_flip_advs = f_T_flip_advs.argmax(1).detach().clone()
-            F_T_rotation_advs = f_T_rotation_advs.argmax(1).detach().clone()
-            F_recon_flip = f_recon_flip.argmax(1).detach().clone()
-            F_recon_rotation = f_recon_rotation.argmax(1).detach().clone()
-
-
-            acc_flip_denoised = sum(F_T_flip_denoised==F_T_flip_cleans)/T_flip_cleans.size(0)
-            acc_flip_perturb = sum(F_recon_flip==F_T_flip_advs)/T_flip_cleans.size(0)
-
-            acc_rotation_denoised = sum(F_T_rotation_denoised==F_T_rotation_cleans)/T_flip_cleans.size(0)
-            acc_rotation_perturb = sum(F_recon_rotation==F_T_rotation_advs)/T_flip_cleans.size(0)
-
-            acc_flip.update(acc_flip_denoised.item(), cleans.size(0))
-            suc_rate_flip.update(acc_flip_perturb.item(), cleans.size(0))
-
-            acc_rotation.update(acc_rotation_denoised.item(), cleans.size(0))
-            suc_rate_rotation.update(acc_rotation_perturb.item(), cleans.size(0))
-            # adv_outputs = classifier(advs - denoised + cleans)
-            # f_denoised = classifier(denoised)
-            # clean_label = classifier(cleans)
-            # adv_label = classifier(advs)
-
-            
-
-            # measure elapsed time
-            batch_time.update(time.time() - end)
-            end = time.time()
-
-            if i % print_freq == 0:
-                log = 'Test: [{0}/{1}]\t'' \
-                ''Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'' \
-                ''Data {data_time.val:.3f} ({data_time.avg:.3f})\t'' \
-                ''Acc@flip {acc_flip.val:.3f} ({acc_flip.avg:.3f})\t'' \
-                ''Suc_rate@flip {suc_rate_flip.val:.3f} ({suc_rate_flip.avg:.3f})\t'' \
-                ''Acc@rotation {acc_rotation.val:.3f} ({acc_rotation.avg:.3f})\t'' \
-                ''Suc_rate@rotation {suc_rate_rotation.val:.3f} ({suc_rate_rotation.avg:.3f})\n'.format(
-                    i, len(loader), batch_time=batch_time,
-                    data_time=data_time, acc_flip=acc_flip, suc_rate_flip = suc_rate_flip, acc_rotation = acc_rotation, suc_rate_rotation =suc_rate_rotation)
-
-                print(log)
-
-                out = open(outputFile, 'a')
-                out.write(log)
-                out.close()
-
-        return (acc_flip.avg, suc_rate_flip.avg, acc_rotation.avg, suc_rate_rotation.avg)
-
-def test_with_classifier_TDx(loader: DataLoader, denoiser: torch.nn.Module, criterion, noise_sd: float, print_freq: int, classifier: torch.nn.Module, classifier_gt: torch.nn.Module):
-    """
-    A function to test the classification performance of a denoiser when attached to a given classifier
-        :param loader:DataLoader: test dataloader
-        :param denoiser:torch.nn.Module: the denoiser 
-        :param criterion: the loss function (e.g. CE)
-        :param noise_sd:float: the std-dev of the Guassian noise perturbation of the input
-        :param print_freq:int: the frequency of logging
-        :param classifier:torch.nn.Module: the classifier to which the denoiser is attached
-    """
-    root = ''
-    MSE = MSELoss(size_average=None, reduce=None, reduction='mean').cuda()
-    L1 = L1Loss(size_average=None, reduce=None, reduction='mean').cuda()
-    # log
-    result_dir = os.path.join(root, "Result_test")
-
-    if args.transform != None:
-        transform_set = list(map(lambda x: str(x), args.transform.split(",")))
-
-    now_time = datetime.now()
-    time_str = datetime.strftime(now_time, '%m-%d_%H-%M-%S')
-
-    log_dir = os.path.join(result_dir, time_str)
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-
-    outputFile = os.path.join(log_dir, 'log.txt')
-
-    batch_time = AverageMeter()
-    data_time = AverageMeter()
-    
-    top1 = AverageMeter()
-    top1_perturb = AverageMeter()
-    acc_flip = AverageMeter()
-    suc_rate_flip = AverageMeter()
-    acc_rotation = AverageMeter()
-    suc_rate_rotation = AverageMeter()
-    
-
-    end = time.time()
-
-    # switch to eval mode
-    classifier.eval()
-    classifier_gt.eval()
-    if denoiser:
-        denoiser.eval()
-
-    with torch.no_grad():
-        
-        for i, (cleans, advs) in enumerate(loader):
-        # measure data loading time
-            data_time.update(time.time() - end)
-            perturbation = cleans - advs
-            
-            cleans = cleans.cuda().to(dtype=torch.float)
-            advs = advs.cuda().to(dtype=torch.float) 
-            
-            
-            if denoiser is not None:
-                denoised = denoiser(advs)
-            
-            recon_adv = advs - denosied + cleans
-
-            T_flip_denoised = torch.zeros(cleans.shape[0], cleans.shape[1], cleans.shape[2], cleans.shape[3])
-            T_flip_recon = torch.zeros(cleans.shape[0], cleans.shape[1], cleans.shape[2], cleans.shape[3])
-            T_flip_cleans = torch.zeros(cleans.shape[0], cleans.shape[1], cleans.shape[2], cleans.shape[3])
-            T_flip_advs = torch.zeros(cleans.shape[0], cleans.shape[1], cleans.shape[2], cleans.shape[3])
-
-            T_rotation_denoised = torch.zeros(cleans.shape[0], cleans.shape[1], cleans.shape[2], cleans.shape[3])
-            T_rotation_recon = torch.zeros(cleans.shape[0], cleans.shape[1], cleans.shape[2], cleans.shape[3])
-            T_rotation_cleans = torch.zeros(cleans.shape[0], cleans.shape[1], cleans.shape[2], cleans.shape[3])
-            T_rotation_advs = torch.zeros(cleans.shape[0], cleans.shape[1], cleans.shape[2], cleans.shape[3])
-            for trans in transform_set:
-                if trans == 'rotation':
-                    angle = transforms.RandomRotation.get_params([-180, 180])
-                    T_rotation_denoised = tf.rotate(denosied,angle)
-                    T_rotation_recon = tf.rotate(recon_adv,angle)
-                    T_rotation_cleans = tf.rotate(cleans,angle)
-                    T_rotation_advs = tf.rotate(advs,angle)
-                elif trans == 'flip':
-                    if random.random() > 0.5:
-                        T_flip_denoised = tf.hflip(denosied)
-                        T_flip_recon = tf.hflip(recon_adv)
-                        T_flip_cleans = tf.hflip(cleans)
-                        T_flip_advs = tf.hflip(advs)
-                    if random.random() > 0.5:
-                        T_flip_denoised = tf.vflip(denosied)
-                        T_flip_recon = tf.vflip(recon_adv)
-                        T_flip_cleans = tf.vflip(cleans)
-                        T_flip_advs = tf.vflip(advs)
-            T_rotation_denoised = T_rotation_denoised.cuda().to(dtype=torch.float)
-            T_rotation_recon = T_rotation_recon.cuda().to(dtype=torch.float)
-            T_rotation_cleans = T_rotation_cleans.cuda().to(dtype=torch.float)
-            T_rotation_advs = T_rotation_advs.cuda().to(dtype=torch.float)
-            T_flip_denoised = T_flip_denoised.cuda().to(dtype=torch.float)
-            T_flip_recon = T_flip_recon.cuda().to(dtype=torch.float)
-            T_flip_cleans = T_flip_cleans.to(dtype=torch.float)
-            T_flip_advs = T_flip_advs.to(dtype=torch.float)
-
-            f_T_flip_denoised = classifier(T_flip_denoised)
-            f_T_rotation_denoised = classifier(T_rotation_denoised)
-            f_T_flip_cleans = classifier(T_flip_cleans)
-            f_T_rotation_cleans = classifier(T_rotation_cleans)
-            f_T_flip_advs = classifier(T_flip_advs)
-            f_T_rotation_advs = classifier(T_rotation_advs)
-            f_recon_flip = classifier(T_flip_recon)
-            f_recon_rotation = classifier(T_rotation_recon)
-
-            F_T_flip_denoised = f_T_flip_denoised.argmax(1).detach().clone()
-            F_T_rotation_denoised = f_T_rotation_denoised.argmax(1).detach().clone()
-            F_T_flip_cleans = f_T_flip_cleans.argmax(1).detach().clone()
-            F_T_rotation_cleans = f_T_rotation_cleans.argmax(1).detach().clone()
-            F_T_flip_advs = f_T_flip_advs.argmax(1).detach().clone()
-            F_T_rotation_advs = f_T_rotation_advs.argmax(1).detach().clone()
-            F_recon_flip = f_recon_flip.argmax(1).detach().clone()
-            F_recon_rotation = f_recon_rotation.argmax(1).detach().clone()
-
-            acc_flip_denoised = sum(F_T_flip_denoised==F_T_flip_cleans)/T_flip_cleans.size(0)
-            acc_flip_perturb = sum(F_recon_flip==F_T_flip_advs)/T_flip_cleans.size(0)
-
-            acc_rotation_denoised = sum(F_T_rotation_denoised==F_T_rotation_cleans)/T_flip_cleans.size(0)
-            acc_rotation_perturb = sum(F_recon_rotation==F_T_rotation_advs)/T_flip_cleans.size(0)
-
-            acc_flip.update(acc_flip_denoised.item(), cleans.size(0))
-            suc_rate_flip.update(acc_flip_perturb.item(), cleans.size(0))
-
-            acc_rotation.update(acc_rotation_denoised.item(), cleans.size(0))
-            suc_rate_rotation.update(acc_rotation_perturb.item(), cleans.size(0))
-            # adv_outputs = classifier(advs - denoised + cleans)
-            # f_denoised = classifier(denoised)
-            # clean_label = classifier(cleans)
-            # adv_label = classifier(advs)
-
-            
-
-            # measure elapsed time
-            batch_time.update(time.time() - end)
-            end = time.time()
-
-            if i % print_freq == 0:
-                log = 'Test: [{0}/{1}]\t'' \
-                ''Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'' \
-                ''Data {data_time.val:.3f} ({data_time.avg:.3f})\t'' \
-                ''Acc@flip {acc_flip.val:.3f} ({acc_flip.avg:.3f})\t'' \
-                ''Suc_rate@flip {suc_rate_flip.val:.3f} ({suc_rate_flip.avg:.3f})\t'' \
-                ''Acc@rotation {acc_rotation.val:.3f} ({acc_rotation.avg:.3f})\t'' \
-                ''Suc_rate@rotation {suc_rate_rotation.val:.3f} ({suc_rate_rotation.avg:.3f})\n'.format(
-                    i, len(loader), batch_time=batch_time,
-                    data_time=data_time, acc_flip=acc_flip, suc_rate_flip = suc_rate_flip, acc_rotation = acc_rotation, suc_rate_rotation =suc_rate_rotation)
-
-                print(log)
-
-                out = open(outputFile, 'a')
-                out.write(log)
-                out.close()
-
-        return (acc_flip.avg, suc_rate_flip.avg, acc_rotation.avg, suc_rate_rotation.avg)
-
 def imsave(img, index, name):
     # inv_normalize = transforms.Normalize(
     #     mean=[-0.4914/0.2023, -0.4822/0.1994, -0.4465/0.2010],
@@ -1101,6 +706,10 @@ if __name__ == "__main__":
     parser.add_argument('--test_DTx',default=0, type = int, help='whether test the performance of DTx or not')
     parser.add_argument('--test_TDx',default=0, type = int, help='whether test the performance of TDx or not')
     parser.add_argument('--intensity', default = 'weak,medium,strong', type = str, help ='The attack density, medium, strong, weak,out')
+    parser.add_argument('--img_folder', default='', type=str,
+                    help='path to the test data')
+    parser.add_argument('--root', default='', type=str,
+                    help='path to the root of the training code')
     args = parser.parse_args()
     
     main(args)

@@ -3,7 +3,9 @@ export CUDA_VISIBLE_DEVICES=4
 python3 -u -W ignore RED_train_with_trans.py   --dataset cifar10\
                                             --batch 4\
                                             --arch cifar_dncnn\
-                                            --pretrained-denoiser ''\
+                                            --pretrained-denoiser 'Path-to-Pretrained-Denoiser'\
+                                            --advdata_dir 'Path-to-Training-Data'
+                                            --root 'Path-to-Code'
                                             --surrogate_model 'robust_res50'\
                                             --lr 1e-4\
                                             --epoch 300\

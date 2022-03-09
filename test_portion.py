@@ -66,7 +66,7 @@ def main(args):
     if not os.path.exists(args.outdir):
         os.makedirs(args.outdir)
     
-    root = ''
+    root = args.root
     attack_method = list(map(lambda x: str(x), args.attack_method.split(",")))
     victim_model = list(map(lambda x: str(x), args.victim_model.split(",")))
     intensity = list(map(lambda x: str(x), args.intensity.split(",")))
@@ -82,21 +82,6 @@ def main(args):
     clf_acc_perturb = np.zeros((len(attack_method), len(victim_model)))
 
 
-    # losses_adv_a_advs = np.zeros(args.fig_nodes_num)
-    # losses_adv_a_cleans = np.zeros(args.fig_nodes_num)
-    # losses_adv_a_advs_L1 = np.zeros(args.fig_nodes_num)
-    # losses_adv_a_cleans_L1 = np.zeros(args.fig_nodes_num)
-    # accs_adv_a = np.zeros(args.fig_nodes_num)
-    # suc_rates_adv_a = np.zeros(args.fig_nodes_num)
-    # logits_losses_denoised_clean = np.zeros(args.fig_nodes_num)
-    # logits_losses_denoised_adv = np.zeros(args.fig_nodes_num)
-    # logits_losses_clean_adv = np.zeros(args.fig_nodes_num)
-    
-
-    # logits_losses_recon_adv_clean = np.zeros(args.fig_nodes_num)
-    # logits_losses_recon_adv_adv = np.zeros(args.fig_nodes_num)
-    # logits_losses_adv_c_clean = np.zeros(args.fig_nodes_num)
-    # logits_losses_adv_c_adv = np.zeros(args.fig_nodes_num)
 
     accs_adv_c = np.zeros((args.fig_nodes_num,len(victim_model)))
     suc_rates_adv_c = np.zeros((args.fig_nodes_num, len(victim_model)))
@@ -117,9 +102,7 @@ def main(args):
         for  attack_name in attack_method: #PGD,FGSM,CW
             for intensity_name in intensity:
                 text_test_list = os.path.join(root, 'test_list_portion_{}_{}_{}.txt'.format(model_name, attack_name, intensity_name))
-                img_folder = '/home/yifan/github/RED_Denoising/RED_Denoising/code/4typesdenoisedtestdata/4typesdenoisedtestdata/'
-                # img_test_clean = '/home/yifan/github/RED_Denoising/RED_Denoising/code/denoise/' + model_name + '/testclean/' + args.intensity
-                # img_test_adv = '/home/yifan/github/RED_Denoising/RED_Denoising/code/denoise/' + model_name + '/test/' + attack_name + '/' + args.intensity  
+                img_folder = args.img_folder
                 img_test_clean = img_folder + attack_name + model_name + '/test4types/clean'
                 img_test_adv = img_folder + attack_name + model_name + '/test4types/' + intensity_name
                 tt.gen_txt_new_new('test_list_portion_{}_{}_{}.txt'.format(model_name, attack_name, intensity_name), img_test_clean, img_test_adv)
@@ -701,6 +684,10 @@ if __name__ == "__main__":
     parser.add_argument('--victim_model', default = 'res18', type = str, help ='The victim model, res18, res50, vgg16, vgg19, incptv3')
     parser.add_argument('--fig_nodes_num', default = 6, type = int, help ='The number of nodes/portion partitions')
     parser.add_argument('--intensity', default = 'weak,medium,strong', type = str, help ='The attack density, medium, strong, weak,out')
+    parser.add_argument('--img_folder', default='', type=str,
+                    help='path to the test data')
+    parser.add_argument('--root', default='', type=str,
+                    help='path to the root of the training code')
     args = parser.parse_args()
     
     main(args)
