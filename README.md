@@ -1,6 +1,12 @@
 # RED_Denoising
 This is the code to run Reverse Engineering of Imperceptible Adversarial Image Perturbations, accepted to ICLR'22. 
 
+Reverse Engineering of Imperceptible Adversarial Image Perturbations
+Yifan Gong, Yuguang Yao, Yize Li, Yimeng Zhang, Xiaoming Liu, Xue Lin, Sijia Liu
+
+ICLR'22 
+Paper: https://openreview.net/forum?id=gpp7cf0xdfN
+
 ## Preparation
 #### Set up a new anaconda environment with name [environment-name] by using the environment.yml file with the following command:
 ```
