@@ -7,6 +7,15 @@ Yifan Gong, Yuguang Yao, Yize Li, Yimeng Zhang, Xiaoming Liu, Xue Lin, Sijia Liu
 ICLR'22 
 Paper: https://openreview.net/forum?id=gpp7cf0xdfN
 
+There has been a vast volume of research to generate and defend such adversarial attacks. However, the following problem is left unexplored: *How to reverse-engineer adversarial perturbations from an adversarial image?*
+This leads to a new adversarial learning paradigm---Reverse Engineering of Deceptions (RED). 
+If successful, RED allows us to estimate adversarial perturbations and recover the original images. 
+However, carefully crafted, tiny adversarial perturbations are difficult to recover by optimizing a unilateral RED objective. For example, the pure image denoising method may overfit to minimizing the reconstruction error but hardly preserves the classification properties of the true adversarial perturbations. 
+To tackle this challenge, we formalize the RED problem and identify a set of principles crucial to the RED approach design. 
+Particularly, we find that prediction alignment and proper data augmentation (in terms of spatial transformations) are two criteria to achieve a generalizable  RED approach. 
+
+![RED](REDoverview.png)
+
 ## Preparation
 #### Set up a new anaconda environment with name [environment-name] by using the environment.yml file with the following command:
 ```
