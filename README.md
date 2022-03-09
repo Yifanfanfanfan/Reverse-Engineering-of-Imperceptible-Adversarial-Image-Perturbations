@@ -58,4 +58,22 @@ bash test_portion.sh
 2. You can modify other hyperparameter settings according to your requirements.
 
 
+## Citation
+@inproceedings{
+
+gong2022reverse,
+
+title={Reverse Engineering of Imperceptible Adversarial Image Perturbations},
+
+author={Yifan Gong and Yuguang Yao and Yize Li and Yimeng Zhang and Xiaoming Liu and Xue Lin and Sijia Liu},
+
+booktitle={International Conference on Learning Representations},
+
+year={2022},
+
+url={https://openreview.net/forum?id=gpp7cf0xdfN}
+
+}
+
+
 
