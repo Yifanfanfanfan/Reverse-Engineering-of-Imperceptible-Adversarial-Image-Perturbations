@@ -63,6 +63,7 @@ parser.add_argument('--objective', default='denoising', type=str,
 #                     help='path to the classifier used with the `classificaiton`'
 #                          'or `stability` objectives of the denoiser.')
 parser.add_argument('--surrogate_model', default='res18',type=str,help='the name of the surrogate model for regularization term calculation')
+parser.add_argument('--robust_res50_path', default='', type=str, help='The path of the checkpoint for the victim model robust res50')
 parser.add_argument('--pretrained-denoiser', default='', type=str,
                     help='path to a pretrained denoiser')
 parser.add_argument('--advdata_dir', default='', type=str,
@@ -278,7 +279,7 @@ def main():
             clf = nn.Sequential(norm_layer,models.resnet50(pretrained=True)).cuda().eval()
         elif args.surrogate_model == "robust_res50":
             print('--load robust trained res50--')
-            surrogate_checkpoint = torch.load('/home/yifan/github/RED_Denoising/RED_Denoising/code/imagenet_model_weights_2px.pth.tar')
+            surrogate_checkpoint = torch.load(args.robust_res50_path)
             clf = models.__dict__['resnet50']()
 
             state_dict = surrogate_checkpoint['state_dict']
