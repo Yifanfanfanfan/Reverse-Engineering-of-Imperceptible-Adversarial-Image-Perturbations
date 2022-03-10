@@ -3,6 +3,7 @@ python -u -W ignore test_denoiser_shift.py      --dataset imagenet\
                                                 --img_folder 'Path-to-Test-Data'
                                                 --root 'Path-to-Code'\
                                                 --denoiser 'Path-to-Denoiser'\
+                                                --robust_res50_path 'Path-to-Robust-Resnet50'\
                                                 --gamma1 0\
                                                 --lambda1 0\
                                                 --mu1 0\
