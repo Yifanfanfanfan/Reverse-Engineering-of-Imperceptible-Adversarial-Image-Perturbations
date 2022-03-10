@@ -149,7 +149,7 @@ def main(args):
         img_test_adv = img_folder + '/adv'
         tt.gen_txt_robust_auto(text_test_list, img_test_clean, img_test_adv)
         test_data = RD.FaceDataset(text_test_list)
-        vic_checkpoint = torch.load('/home/yifan/github/RED_Denoising/RED_Denoising/code/autoattacktestdata/imagenet_model_weights_4px.pth.tar')
+        vic_checkpoint = torch.load(args.robust_res50_path)
         clf = models.__dict__['resnet50']()
 
         state_dict = vic_checkpoint['state_dict']
@@ -710,6 +710,7 @@ if __name__ == "__main__":
                     help='path to the test data')
     parser.add_argument('--root', default='', type=str,
                     help='path to the root of the training code')
+    parser.add_argument('--robust_res50_path', default='', type=str, help='The path of the checkpoint for the victim model robust res50')
     args = parser.parse_args()
     
     main(args)
